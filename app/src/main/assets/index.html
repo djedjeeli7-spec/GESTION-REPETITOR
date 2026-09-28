@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestion Répétiteur V5</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17202a;font-family:"Times New Roman",Times,serif;font-size:16px}
+header{background:#17324d;color:#fff;padding:18px 22px}header h1{margin:0;font-size:27px}
+nav{display:flex;flex-wrap:wrap;gap:7px;padding:10px 14px;background:#fff;border-bottom:1px solid #d9dee3}
+button{border:0;border-radius:7px;padding:9px 13px;cursor:pointer;font:inherit;background:#17324d;color:#fff}
+button.secondary{background:#e7edf2;color:#17324d}button.success{background:#087443}button.danger{background:#b42318}
+nav button.active{background:#0b6bcb}
+main{max-width:1300px;margin:20px auto;padding:0 15px}.page{display:none}.page.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px}.card,.panel{background:#fff;border-radius:10px;box-shadow:0 1px 5px #0001}.card{padding:17px}.panel{padding:18px;margin:16px 0}
+.label{color:#667085;font-size:14px}.value{font-size:25px;font-weight:bold;margin-top:6px}
+form.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+input,select,textarea{width:100%;padding:9px;border:1px solid #c9d0d7;border-radius:6px;background:#fff;font:inherit}textarea{min-height:70px}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #e4e7eb;text-align:left;vertical-align:top}th{background:#f6f8fa}
+.actions{display:flex;gap:6px;flex-wrap:wrap}.muted{color:#667085}.ok{color:#087443;font-weight:bold}.warn{color:#a15c00;font-weight:bold}.bad{color:#b42318;font-weight:bold}
+.sticker{display:inline-block;border-radius:12px;padding:3px 8px;font-size:13px;font-weight:bold}.paid{background:#d9f5e5;color:#087443}.partial{background:#fff0cf;color:#8a5400}.due{background:#fde1df;color:#a32118}.planned{background:#e2ecff;color:#1452a3}.done{background:#dcf6e8;color:#087443}.cancelled{background:#ececec;color:#666}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid #d7dce1;border-top:1px solid #d7dce1}.cal-head{background:#edf1f5;text-align:center;font-weight:bold;padding:9px;border-right:1px solid #d7dce1;border-bottom:1px solid #d7dce1}.cal-cell{min-height:115px;padding:5px;border-right:1px solid #d7dce1;border-bottom:1px solid #d7dce1;background:#fff}.cal-num{font-weight:bold}.event{font-size:12px;padding:4px;margin:3px 0;border-radius:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.legend{display:inline-flex;align-items:center;margin:4px 10px 4px 0}.dot{width:15px;height:15px;border-radius:4px;border:1px solid #999;margin-right:5px;display:inline-block}
+.profile{display:grid;grid-template-columns:1fr 1fr;gap:14px}.profile .full{grid-column:1/-1}
+.notice{padding:10px;border-radius:7px;background:#f2f5f8;margin:8px 0}
+@media(max-width:700px){.profile{grid-template-columns:1fr}.cal-cell{min-height:80px}.event{font-size:10px}.cal-head{font-size:12px}}
+</style>
+</head>
+<body>
+<header><h1>📚 Gestion Répétiteur V5</h1></header>
+<nav id="nav">
+<button class="active" data-page="dashboard">🏠 Tableau de bord</button>
+<button data-page="students">👨‍🎓 Élèves</button>
+<button data-page="sessions">📅 Séances</button>
+<button data-page="agenda">🗓️ Agenda</button>
+<button data-page="payments">💰 Paiements</button>
+<button data-page="report">📊 Bilan</button>
+<button data-page="stats">📈 Statistiques</button>
+<button data-page="legend">🏷️ Légende</button>
+<button data-page="backup">💾 Sauvegarde</button>
+</nav>
+<main>
+<section id="dashboard" class="page active"><h2>🏠 Tableau de bord</h2><div class="cards">
+<div class="card"><div class="label">Élèves actifs</div><div class="value" id="dStudents">0</div></div>
+<div class="card"><div class="label">Séances aujourd'hui</div><div class="value" id="dToday">0</div></div>
+<div class="card"><div class="label">Heures effectuées ce mois</div><div class="value" id="dHours">0</div></div>
+<div class="card"><div class="label">À recevoir ce mois</div><div class="value" id="dDue">0 F</div></div>
+<div class="card"><div class="label">Déjà encaissé</div><div class="value" id="dPaid">0 F</div></div>
+<div class="card"><div class="label">Reste à recevoir</div><div class="value" id="dRest">0 F</div></div>
+</div><div class="panel"><h3>📌 Aujourd'hui</h3><div id="todayList"></div></div><div class="panel"><h3>💰 Paiements du mois</h3><div id="dashPayments"></div></div></section>
+
+<section id="students" class="page"><h2>👨‍🎓 Élèves</h2>
+<div class="panel"><h3>Ajouter un élève</h3><form id="studentForm" class="grid">
+<input id="sName" placeholder="Nom et prénom" required><input id="sClass" placeholder="Classe">
+<input id="sRate" type="number" min="0" placeholder="Tarif mensuel (FCFA)" required><input id="sPhone" placeholder="Téléphone du parent">
+<input id="sColor" type="color" value="#3b82f6"><input id="sStartDate" type="date">
+<input id="sDays" placeholder="Jours habituels (ex. lundi, mercredi)"><input id="sStart" type="time" placeholder="Début habituel">
+<input id="sEnd" type="time" placeholder="Fin habituelle"><textarea id="sNote" placeholder="Notes"></textarea>
+<button>Ajouter l'élève</button></form></div>
+<div class="panel"><input id="studentSearch" placeholder="🔎 Rechercher un élève"><div id="studentTable"></div></div>
+<div class="panel" id="studentProfile" style="display:none"></div>
+</section>
+
+<section id="sessions" class="page"><h2>📅 Séances</h2>
+<div class="panel"><h3>Ajouter une séance</h3><form id="sessionForm" class="grid">
+<select id="sessionStudent" required></select><input id="sessionDate" type="date" required>
+<input id="sessionStart" type="time" required><input id="sessionEnd" type="time" required>
+<select id="sessionStatus"><option value="planned">⬜ Prévue</option><option value="done">✅ Effectuée</option><option value="cancelled">❌ Annulée</option></select>
+<input id="sessionNote" placeholder="Note"><button>Ajouter la séance</button></form>
+</div>
+<div class="panel"><form id="sessionFilter" class="grid"><input id="sessionMonth" type="month"><select id="sessionFilterStudent"></select><button>Filtrer</button></form><div id="sessionTable"></div></div>
+</section>
+
+<section id="agenda" class="page"><h2>🗓️ Agenda mensuel</h2>
+<div class="panel"><form id="agendaForm" class="grid"><input id="agendaMonth" type="month"><button>Afficher le mois</button><button type="button" class="secondary" id="generateBtn">🔁 Générer le planning</button></form>
+<div id="agendaLegend"></div><div id="calendar"></div></div></section>
+
+<section id="payments" class="page"><h2>💰 Paiements mensuels</h2>
+<div class="panel"><h3>Enregistrer un paiement</h3><form id="paymentForm" class="grid">
+<select id="paymentStudent" required></select><input id="paymentDate" type="date" required><input id="paymentAmount" type="number" min="0" placeholder="Montant payé (FCFA)" required><input id="paymentNote" placeholder="Note"><button>Enregistrer</button></form></div>
+<div class="panel"><form id="paymentFilter" class="grid"><input id="paymentMonth" type="month"><select id="paymentFilterStudent"></select><button>Filtrer</button></form><div id="paymentTable"></div></div></section>
+
+<section id="report" class="page"><h2>📊 Bilan mensuel</h2><div class="panel"><form id="reportForm" class="grid"><input id="reportMonth" type="month"><button>Afficher</button></form></div><div class="panel"><div id="reportTable"></div></div></section>
+<section id="stats" class="page"><h2>📈 Statistiques</h2><div class="panel"><form id="statsForm" class="grid"><input id="statsMonth" type="month"><button>Afficher</button></form></div><div class="cards" id="statsCards"></div><div class="panel" id="statsDetail"></div></section>
+
+<section id="legend" class="page"><h2>🏷️ Légende des stickers</h2><div class="panel">
+<p><span class="sticker paid">🟢 PAYÉ</span> Le tarif mensuel est entièrement réglé.</p>
+<p><span class="sticker partial">🟠 PARTIEL</span> Une partie du tarif a été payée.</p>
+<p><span class="sticker due">🔴 À PAYER</span> Le mois est dû et aucun paiement complet n'est enregistré.</p>
+<p><span class="sticker planned">⬜ PRÉVU</span> Séance programmée mais pas encore effectuée.</p>
+<p><span class="sticker done">✅ EFFECTUÉ</span> Séance réalisée.</p>
+<p><span class="sticker cancelled">❌ ANNULÉ</span> Séance annulée.</p>
+<p class="muted">Les couleurs des élèves servent à les reconnaître rapidement dans l'agenda.</p>
+</div></section>
+
+<section id="backup" class="page"><h2>💾 Sauvegarde</h2><div class="panel">
+<p><b>Sauvegarde automatique :</b> les changements sont enregistrés automatiquement dans ce navigateur.</p>
+<div class="actions"><button id="exportBtn">📥 Exporter mes données</button><button class="secondary" id="importBtn">📤 Restaurer une sauvegarde</button><input id="importFile" type="file" accept=".json" style="display:none"></div>
+<div class="notice">Conseil : exporte régulièrement une sauvegarde et garde le fichier dans un endroit sûr.</div></div></section>
+</main>
+<script>
+const KEY='gestion_repetiteur_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"students":[],"sessions":[],"payments":[]}');
+db.students=(db.students||[]).map(s=>({...s,color:s.color||'#3b82f6'}));db.sessions=db.sessions||[];db.payments=db.payments||[];
+const $=id=>document.getElementById(id), money=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n))+' F';
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const monthNow=()=>new Date().toISOString().slice(0,7), dateNow=()=>new Date().toISOString().slice(0,10);
+const student=id=>db.students.find(s=>s.id===id);
+const dur=(a,b)=>{if(!a||!b)return 0;let [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);let m=(bh*60+bm)-(ah*60+am);return m>0?m/60:0};
+function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
+function sticker(s,month){let due=hasDone(s.id,month)?s.rate:0,paid=db.payments.filter(p=>p.studentId===s.id&&p.date.startsWith(month)).reduce((a,p)=>a+p.amount,0);if(due===0&&paid===0)return '<span class="sticker">—</span>';if(paid>=due)return '<span class="sticker paid">🟢 PAYÉ</span>';if(paid>0)return '<span class="sticker partial">🟠 PARTIEL</span>';return '<span class="sticker due">🔴 À PAYER</span>'}
+function hasDone(id,m){return db.sessions.some(x=>x.studentId===id&&x.status==='done'&&x.date.startsWith(m))}
+function studentOptions(sel,all=true){sel.innerHTML='<option value="">'+(all?'Tous les élèves':'Choisir un élève')+'</option>'+db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(b.dataset.page).classList.add('active');renderAll()});
+
+$('studentForm').onsubmit=e=>{e.preventDefault();db.students.push({id:crypto.randomUUID(),name:sName.value,cls:sClass.value,rate:+sRate.value,phone:sPhone.value,color:sColor.value,startDate:sStartDate.value,days:sDays.value,start:sStart.value,end:sEnd.value,note:sNote.value});e.target.reset();sColor.value='#3b82f6';save()};
+$('studentSearch').oninput=renderStudents;
+function renderStudents(){let q=studentSearch.value.toLowerCase();let rows=db.students.filter(s=>(s.name+' '+s.cls).toLowerCase().includes(q));studentTable.innerHTML=rows.length?`<table><tr><th>Élève</th><th>Classe</th><th>Tarif mensuel</th><th>Contact</th><th>Statut</th><th>Actions</th></tr>${rows.map(s=>`<tr><td><span class="dot" style="background:${esc(s.color)}"></span>${esc(s.name)}</td><td>${esc(s.cls)}</td><td>${money(s.rate)}</td><td>${esc(s.phone)}</td><td>${sticker(s,monthNow())}</td><td><div class="actions"><button onclick="viewStudent('${s.id}')">👁️ Fiche</button><button class="danger" onclick="deleteStudent('${s.id}')">Supprimer</button></div></td></tr>`).join('')}</table>`:'<p class="muted">Aucun élève.</p>'}
+function viewStudent(id){let s=student(id);if(!s)return;let sh=db.sessions.filter(x=>x.studentId===id).sort((a,b)=>b.date.localeCompare(a.date));let ph=db.payments.filter(x=>x.studentId===id).sort((a,b)=>b.date.localeCompare(a.date));studentProfile.style.display='block';studentProfile.innerHTML=`<h3>👤 ${esc(s.name)}</h3><div class="profile"><div><b>Classe :</b> ${esc(s.cls)}</div><div><b>Tarif mensuel :</b> ${money(s.rate)}</div><div><b>Contact :</b> ${esc(s.phone)}</div><div><b>Couleur :</b> <span class="dot" style="background:${esc(s.color)}"></span></div><div><b>Jours habituels :</b> ${esc(s.days)}</div><div><b>Horaires :</b> ${esc(s.start)} → ${esc(s.end)}</div><div><b>Début :</b> ${esc(s.startDate)}</div><div><b>Statut ce mois :</b> ${sticker(s,monthNow())}</div><div class="full"><b>Notes :</b> ${esc(s.note)}</div></div><hr><h4>Séances (${sh.length})</h4>${sh.length?'<table><tr><th>Date</th><th>Horaire</th><th>Durée</th><th>Statut</th></tr>'+sh.slice(0,30).map(x=>`<tr><td>${x.date}</td><td>${x.start} → ${x.end}</td><td>${dur(x.start,x.end)} h</td><td>${statusSticker(x.status)}</td></tr>`).join('')+'</table>':'<p>Aucune séance.</p>'}<h4>Paiements (${ph.length})</h4>${ph.length?'<table><tr><th>Date</th><th>Montant</th><th>Note</th></tr>'+ph.slice(0,30).map(x=>`<tr><td>${x.date}</td><td>${money(x.amount)}</td><td>${esc(x.note)}</td></tr>`).join('')+'</table>':'<p>Aucun paiement.</p>'}`}
+function deleteStudent(id){if(confirm('Supprimer cet élève et ses séances/paiements ?')){db.students=db.students.filter(s=>s.id!==id);db.sessions=db.sessions.filter(x=>x.studentId!==id);db.payments=db.payments.filter(x=>x.studentId!==id);studentProfile.style.display='none';save()}}
+function statusSticker(st){return st==='done'?'<span class="sticker done">✅ EFFECTUÉ</span>':st==='planned'?'<span class="sticker planned">⬜ PRÉVU</span>':'<span class="sticker cancelled">❌ ANNULÉ</span>'}
+
+$('sessionForm').onsubmit=e=>{e.preventDefault();let h=dur(sessionStart.value,sessionEnd.value);if(h<=0){alert('L’heure de fin doit être après l’heure de début.');return}db.sessions.push({id:crypto.randomUUID(),studentId:sessionStudent.value,date:sessionDate.value,start:sessionStart.value,end:sessionEnd.value,hours:h,status:sessionStatus.value,note:sessionNote.value});e.target.reset();sessionDate.value=dateNow();save()};
+$('sessionFilter').onsubmit=e=>{e.preventDefault();renderSessions()};
+function renderSessions(){let m=sessionMonth.value||monthNow(),sid=sessionFilterStudent.value;let arr=db.sessions.filter(x=>x.date.startsWith(m)&&(sid===''||x.studentId===sid)).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start));sessionTable.innerHTML=arr.length?`<table><tr><th>Date</th><th>Élève</th><th>Horaire</th><th>Durée</th><th>Statut</th><th>Actions</th></tr>${arr.map(x=>{let s=student(x.studentId);return `<tr><td>${x.date}</td><td>${esc(s?.name||'Supprimé')}</td><td>${x.start} → ${x.end}</td><td>${dur(x.start,x.end)} h</td><td>${statusSticker(x.status)}</td><td><div class="actions">${x.status==='planned'?`<button class="success" onclick="markDone('${x.id}')">✅ Effectuée</button>`:''}<button class="secondary" onclick="editSession('${x.id}')">✏️ Modifier</button><button class="danger" onclick="deleteSession('${x.id}')">×</button></div></td></tr>`}).join('')}</table>`:'<p class="muted">Aucune séance pour ce filtre.</p>'}
+function markDone(id){let x=db.sessions.find(s=>s.id===id);if(x){x.status='done';save()}}
+function deleteSession(id){if(confirm('Supprimer cette séance ?')){db.sessions=db.sessions.filter(x=>x.id!==id);save()}}
+function editSession(id){let x=db.sessions.find(s=>s.id===id);if(!x)return;let d=prompt('Date (AAAA-MM-JJ)',x.date),st=prompt('Heure de début',x.start),en=prompt('Heure de fin',x.end),status=prompt('Statut : planned / done / cancelled',x.status);if([d,st,en,status].some(v=>v===null))return;let h=dur(st,en);if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||h<=0||!['planned','done','cancelled'].includes(status)){alert('Informations invalides.');return}x.date=d;x.start=st;x.end=en;x.hours=h;x.status=status;save()}
+
+$('agendaForm').onsubmit=e=>{e.preventDefault();renderAgenda(agendaMonth.value)}
+function renderAgenda(m){m=m||monthNow();let [y,mo]=m.split('-').map(Number),first=new Date(y,mo-1,1),last=new Date(y,mo,0),offset=(first.getDay()+6)%7,out='<div class="calendar">';['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d=>out+=`<div class="cal-head">${d}</div>`);for(let i=0;i<offset;i++)out+='<div class="cal-cell"></div>';for(let d=1;d<=last.getDate();d++){let date=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,ev=db.sessions.filter(x=>x.date===date);out+=`<div class="cal-cell"><div class="cal-num">${d}</div>`;ev.forEach(x=>{let s=student(x.studentId);if(s)out+=`<div class="event" title="${esc(s.name)} ${x.start}–${x.end}" style="background:${esc(s.color||'#3b82f6')};opacity:${x.status==='done'?1:x.status==='planned'?.42:.2}">${x.status==='done'?'✓':x.status==='planned'?'○':'✕'} ${esc(s.name)} ${x.start}</div>`});out+='</div>'}out+='</div>';calendar.innerHTML=out;agendaLegend.innerHTML=db.students.map(s=>`<span class="legend"><span class="dot" style="background:${esc(s.color)}"></span>${esc(s.name)}</span>`).join('')}
+$('generateBtn').onclick=()=>{let m=agendaMonth.value||monthNow();let [y,mo]=m.split('-').map(Number);let created=0;db.students.forEach(s=>{let dayMap={'dimanche':0,'lundi':1,'mardi':2,'mercredi':3,'jeudi':4,'vendredi':5,'samedi':6};let wanted=(s.days||'').split(',').map(x=>dayMap[x.trim().toLowerCase()]).filter(x=>x!==undefined);if(!wanted.length||!s.start||!s.end)return;let last=new Date(y,mo,0).getDate();for(let d=1;d<=last;d++){let dt=new Date(y,mo-1,d),dow=dt.getDay();if(wanted.includes(dow)){let date=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!db.sessions.some(x=>x.studentId===s.id&&x.date===date)){db.sessions.push({id:crypto.randomUUID(),studentId:s.id,date,start:s.start,end:s.end,hours:dur(s.start,s.end),status:'planned',note:''});created++}}}});alert(created+' séance(s) prévue(s) ajoutée(s).');save()}
+
+$('paymentForm').onsubmit=e=>{e.preventDefault();db.payments.push({id:crypto.randomUUID(),studentId:paymentStudent.value,date:paymentDate.value,amount:+paymentAmount.value,note:paymentNote.value});e.target.reset();paymentDate.value=dateNow();save()};
+$('paymentFilter').onsubmit=e=>{e.preventDefault();renderPayments()};
+function renderPayments(){let m=paymentMonth.value||monthNow(),sid=paymentFilterStudent.value;let arr=db.payments.filter(x=>x.date.startsWith(m)&&(sid===''||x.studentId===sid)).sort((a,b)=>b.date.localeCompare(a.date));paymentTable.innerHTML=arr.length?`<table><tr><th>Date</th><th>Élève</th><th>Montant</th><th>Note</th><th></th></tr>${arr.map(x=>`<tr><td>${x.date}</td><td>${esc(student(x.studentId)?.name||'Supprimé')}</td><td>${money(x.amount)}</td><td>${esc(x.note)}</td><td><button class="danger" onclick="deletePayment('${x.id}')">×</button></td></tr>`).join('')}</table>`:'<p class="muted">Aucun paiement.</p>'}
+function deletePayment(id){db.payments=db.payments.filter(x=>x.id!==id);save()}
+
+$('reportForm').onsubmit=e=>{e.preventDefault();renderReport(reportMonth.value)}
+function renderReport(m){m=m||monthNow();let rows=db.students.map(s=>{let ss=db.sessions.filter(x=>x.studentId===s.id&&x.status==='done'&&x.date.startsWith(m)),hrs=ss.reduce((a,x)=>a+dur(x.start,x.end),0),due=hrs>0?s.rate:0,paid=db.payments.filter(x=>x.studentId===s.id&&x.date.startsWith(m)).reduce((a,x)=>a+x.amount,0);return{s,ss,hrs,due,paid,rest:Math.max(0,due-paid)}});let T=rows.reduce((a,r)=>({hrs:a.hrs+r.hrs,due:a.due+r.due,paid:a.paid+r.paid,rest:a.rest+r.rest}),{hrs:0,due:0,paid:0,rest:0});reportTable.innerHTML=`<table><tr><th>Élève</th><th>Séances</th><th>Heures</th><th>Dû</th><th>Payé</th><th>Reste</th><th>Statut</th></tr>${rows.map(r=>`<tr><td>${esc(r.s.name)}</td><td>${r.ss.length}</td><td>${r.hrs}</td><td>${money(r.due)}</td><td>${money(r.paid)}</td><td>${money(r.rest)}</td><td>${sticker(r.s,m)}</td></tr>`).join('')}<tr><th>TOTAL</th><th></th><th>${T.hrs}</th><th>${money(T.due)}</th><th>${money(T.paid)}</th><th>${money(T.rest)}</th><th></th></tr></table>`}
+
+$('statsForm').onsubmit=e=>{e.preventDefault();renderStats(statsMonth.value)}
+function renderStats(m){m=m||monthNow();let done=db.sessions.filter(x=>x.status==='done'&&x.date.startsWith(m)),hours=done.reduce((a,x)=>a+dur(x.start,x.end),0),rev=db.payments.filter(x=>x.date.startsWith(m)).reduce((a,x)=>a+x.amount,0),cancel=db.sessions.filter(x=>x.status==='cancelled'&&x.date.startsWith(m)).length;let counts=db.students.map(s=>({name:s.name,n:done.filter(x=>x.studentId===s.id).length})).sort((a,b)=>b.n-a.n);statsCards.innerHTML=`<div class="card"><div class="label">Séances effectuées</div><div class="value">${done.length}</div></div><div class="card"><div class="label">Heures enseignées</div><div class="value">${hours}</div></div><div class="card"><div class="label">Revenus encaissés</div><div class="value">${money(rev)}</div></div><div class="card"><div class="label">Séances annulées</div><div class="value">${cancel}</div></div>`;statsDetail.innerHTML='<h3>Élèves les plus vus</h3>'+counts.slice(0,10).map((x,i)=>`<p>${i+1}. <b>${esc(x.name)}</b> — ${x.n} séance(s)</p>`).join('')}
+
+$('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Sauvegarde_Repetiteur_'+dateNow()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('importBtn').onclick=()=>importFile.click();$('importFile').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.students)||!Array.isArray(x.sessions)||!Array.isArray(x.payments))throw 0;if(confirm('Restaurer cette sauvegarde ? Les données actuelles seront remplacées.')){db=x;db.students=db.students.map(s=>({...s,color:s.color||'#3b82f6'}));save();alert('Sauvegarde restaurée.')}}catch(err){alert('Fichier invalide.')}};r.readAsText(f);e.target.value=''}
+
+function renderDashboard(){let m=monthNow(),done=db.sessions.filter(x=>x.status==='done'&&x.date.startsWith(m)),today=db.sessions.filter(x=>x.date===dateNow()).sort((a,b)=>a.start.localeCompare(b.start)),due=db.students.reduce((a,s)=>a+(hasDone(s.id,m)?s.rate:0),0),paid=db.payments.filter(x=>x.date.startsWith(m)).reduce((a,x)=>a+x.amount,0);dStudents.textContent=db.students.length;dToday.textContent=today.length;dHours.textContent=done.reduce((a,x)=>a+dur(x.start,x.end),0);dDue.textContent=money(due);dPaid.textContent=money(paid);dRest.textContent=money(Math.max(0,due-paid));todayList.innerHTML=today.length?today.map(x=>`<p>${statusSticker(x.status)} <b>${x.start}–${x.end}</b> — ${esc(student(x.studentId)?.name||'Supprimé')}</p>`).join(''):'<p class="muted">Aucune séance aujourd’hui.</p>';dashPayments.innerHTML=db.students.map(s=>`<p><b>${esc(s.name)}</b> — ${sticker(s,m)}</p>`).join('')||'<p>Aucun élève.</p>'}
+function renderAll(){studentOptions(sessionStudent,false);studentOptions(paymentStudent,false);studentOptions(sessionFilterStudent,true);studentOptions(paymentFilterStudent,true);renderStudents();renderSessions();renderPayments();renderAgenda(agendaMonth.value);renderReport(reportMonth.value);renderStats(statsMonth.value);renderDashboard()}
+sessionDate.value=dateNow();paymentDate.value=dateNow();[sessionMonth,paymentMonth,reportMonth,statsMonth,agendaMonth].forEach(x=>x.value=monthNow());renderAll();
+</script>
+</body></html>
